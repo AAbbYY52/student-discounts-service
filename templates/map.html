@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Карта скидок - Москва{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="page-title">Карта скидок в Москве</h1>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-light btn-sm">
+                ← Назад к списку
+            </a>
+        </div>
+
+        <div class="card card-dark mb-3">
+            <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <div class="text-muted small">Всего скидок на карте</div>
+                    <div class="h5 mb-0 accent-text">{{ total_points }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-dark">
+            <div class="card-body p-0">
+                <div id="map" class="ymap-full"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU{% if yandex_maps_api_key %}&apikey={{ yandex_maps_api_key }}{% endif %}"></script>
+<script>
+  const MAP_POINTS = {{ map_points | tojson }};
+  let map;
+
+  function initMap() {
+    map = new ymaps.Map('map', {
+      center: [55.751244, 37.618423],
+      zoom: 11,
+      controls: ['zoomControl', 'fullscreenControl']
+    });
+
+    const clusterer = new ymaps.Clusterer({
+      preset: 'islands#orangeClusterIcons',
+      groupByCoordinates: false
+    });
+
+    for (const p of MAP_POINTS) {
+      const balloonContent = `
+        <div style="color: #000 !important; background-color: transparent !important;">
+          <div style="color: #000 !important; font-weight: bold; margin-bottom: 8px;">${p.name}</div>
+          <div style="color: #000 !important; margin-bottom: 4px;"><strong style="color: #000 !important;">Адрес:</strong> <span style="color: #000 !important;">${p.address}</span></div>
+          ${p.discount ? `<div style="color: #000 !important; margin-bottom: 4px;"><strong style="color: #000 !important;">Скидка:</strong> <span style="color: #000 !important;">${p.discount}</span></div>` : ''}
+          ${p.category ? `<div style="color: #000 !important;"><strong style="color: #000 !important;">Категория:</strong> <span style="color: #000 !important;">${p.category}</span></div>` : ''}
+        </div>
+      `;
+      
+      const placemark = new ymaps.Placemark([p.lat, p.lon], {
+        balloonContentHeader: '',
+        balloonContentBody: balloonContent,
+        hintContent: p.name
+      }, {
+        preset: 'islands#orangeIcon'
+      });
+
+      clusterer.add(placemark);
+    }
+
+    map.geoObjects.add(clusterer);
+
+    map.geoObjects.events.add('balloonopen', function (e) {
+      const balloon = e.get('balloon');
+      if (balloon) {
+        setTimeout(function() {
+          try {
+            const balloonElement = balloon.getElement();
+            if (balloonElement) {
+              const contentElements = balloonElement.querySelectorAll('*');
+              for (let i = 0; i < contentElements.length; i++) {
+                contentElements[i].style.setProperty('color', '#000', 'important');
+              }
+              balloonElement.style.setProperty('color', '#000', 'important');
+            }
+          } catch(err) {
+          }
+        }, 50);
+      }
+    });
+
+    if (MAP_POINTS.length > 0) {
+      const bounds = clusterer.getBounds();
+      if (bounds) {
+        map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 40 });
+      }
+    }
+  }
+
+  if (window.ymaps) {
+    ymaps.ready(initMap);
+  }
+</script>
+{% endblock %}
+

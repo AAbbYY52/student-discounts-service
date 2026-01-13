@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}{{ location.name }} - Скидки для студентов{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4 card-dark">
+            <div class="card-header card-header-main">
+                <h2 class="mb-0">{{ location.name }}</h2>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>📍 Адрес:</strong> {{ location.address }}</p>
+                {% if location.category %}
+                <p class="mb-2"><strong>Категория:</strong> 
+                    <span class="badge badge-category">{{ location.category }}</span>
+                </p>
+                {% endif %}
+                {% if location.discount_min is not none or location.discount_max is not none or location.discount_value %}
+                <p class="mb-2">
+                    <strong>Скидка:</strong> 
+                    <span class="badge badge-discount fs-6">{{ location.get_discount_display() }}</span>
+                </p>
+                {% endif %}
+                {% if avg_rating > 0 %}
+                <p class="mb-2">
+                    <strong>Рейтинг:</strong> 
+                    <span class="text-warning">⭐ {{ avg_rating }}</span> 
+                    ({{ location.get_reviews_count() }} отзывов)
+                </p>
+                {% endif %}
+                {% if location.description %}
+                <hr>
+                <p>{{ location.description }}</p>
+                {% endif %}
+                <hr>
+
+                <div class="mt-3">
+                    <strong>Актуальность скидки:</strong>
+                    <div class="small text-muted mb-2">
+                        Да: {{ valid_votes }} &nbsp;&nbsp; Нет: {{ invalid_votes }}
+                    </div>
+                    {% if session.user_id %}
+                    <form method="POST" action="{{ url_for('vote_discount', location_id=location.id) }}" class="d-flex gap-2 flex-wrap">
+                        <input type="hidden" name="is_valid" id="is_valid_input" value="1">
+                        <button type="submit" class="btn btn-sm btn-accent"
+                                onclick="document.getElementById('is_valid_input').value='1';">
+                            ✅ Да, скидка действует
+                        </button>
+                        <button type="submit" class="btn btn-sm btn-outline-accent"
+                                onclick="document.getElementById('is_valid_input').value='0';">
+                            ❌ Нет, скидка не действует
+                        </button>
+                        {% if user_vote %}
+                        <span class="small text-muted ms-2">
+                            Ваш ответ: {{ 'Да' if user_vote.is_valid else 'Нет' }}
+                        </span>
+                        {% endif %}
+                    </form>
+                    {% else %}
+                    <div class="alert alert-dark mt-2 mb-0 small">
+                        <a href="{{ url_for('login') }}">Войдите</a>, чтобы проголосовать за актуальность скидки.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% if session.user_id %}
+            <div class="card-footer card-footer-dark">
+                <button id="favoriteBtn" class="btn btn-outline-accent" 
+                        data-location-id="{{ location.id }}">
+                    {% if is_favorite %}
+                    ❤️ В избранном
+                    {% else %}
+                    🤍 Добавить в избранное
+                    {% endif %}
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card card-dark">
+            <div class="card-header card-header-main">
+                <h4 class="mb-0">Отзывы ({{ reviews|length }})</h4>
+            </div>
+            <div class="card-body">
+                {% if session.user_id %}
+                <form method="POST" action="{{ url_for('add_review', location_id=location.id) }}" class="mb-4">
+                    <div class="mb-3">
+                        <label class="form-label">Ваш отзыв</label>
+                        <textarea class="form-control" name="text" rows="3" required 
+                                  placeholder="Поделитесь своим опытом..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Оценка</label>
+                        <select class="form-select" name="rating" required>
+                            <option value="5">⭐⭐⭐⭐⭐ Отлично</option>
+                            <option value="4">⭐⭐⭐⭐ Хорошо</option>
+                            <option value="3">⭐⭐⭐ Нормально</option>
+                            <option value="2">⭐⭐ Плохо</option>
+                            <option value="1">⭐ Очень плохо</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-accent">Оставить отзыв</button>
+                </form>
+                <hr>
+                {% else %}
+                <div class="alert alert-info">
+                    <a href="{{ url_for('login') }}">Войдите</a>, чтобы оставить отзыв
+                </div>
+                {% endif %}
+
+                {% if reviews %}
+                {% for review in reviews %}
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <strong>{{ review.user.username }}</strong>
+                            <span class="text-muted small ms-2">
+                                {{ review.created_at.strftime('%d.%m.%Y %H:%M') }}
+                            </span>
+                        </div>
+                        <div class="text-warning">
+                            {% for i in range(review.rating) %}⭐{% endfor %}
+                        </div>
+                    </div>
+                    <p class="mb-0">{{ review.text }}</p>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">Пока нет отзывов. Будьте первым!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card card-dark">
+            <div class="card-header card-header-side">
+                <h5 class="mb-0">🔍 Похожие скидки рядом</h5>
+            </div>
+            <div class="card-body">
+                {% if similar_locations %}
+                {% for similar in similar_locations %}
+                <div class="border-bottom pb-3 mb-3">
+                    <h6><a href="{{ url_for('location_detail', location_id=similar.id) }}" class="accent-link">
+                        {{ similar.name }}
+                    </a></h6>
+                    <p class="small text-muted mb-1">{{ similar.address }}</p>
+                    {% if similar.discount_min is not none or similar.discount_max is not none or similar.discount_value %}
+                    <span class="badge badge-discount">{{ similar.get_discount_display() }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">Нет похожих мест</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('favoriteBtn')?.addEventListener('click', function() {
+    const locationId = this.dataset.locationId;
+    const btn = this;
+    
+    fetch(`/toggle_favorite/${locationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'added') {
+            btn.innerHTML = '❤️ В избранном';
+            btn.classList.add('btn-accent');
+            btn.classList.remove('btn-outline-accent');
+        } else {
+            btn.innerHTML = '🤍 Добавить в избранное';
+            btn.classList.remove('btn-accent');
+            btn.classList.add('btn-outline-accent');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Произошла ошибка');
+    });
+});
+</script>
+{% endblock %}

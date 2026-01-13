@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Избранное - Скидки для студентов{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Мои избранные скидки</h1>
+        
+        {% if locations %}
+        <div class="row">
+            {% for location in locations %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ location.name }}</h5>
+                        <p class="card-text text-muted small mb-2">
+                            <strong>📍</strong> {{ location.address }}
+                        </p>
+                        {% if location.category %}
+                        <span class="badge bg-info mb-2">{{ location.category }}</span>
+                        {% endif %}
+                        {% if location.discount_min is not none or location.discount_max is not none or location.discount_value %}
+                        <p class="card-text">
+                            <span class="badge bg-success fs-6">Скидка: {{ location.get_discount_display() }}</span>
+                        </p>
+                        {% endif %}
+                        {% if location.get_reviews_count() > 0 %}
+                        <p class="card-text small">
+                            ⭐ {{ location.get_average_rating() }} 
+                            ({{ location.get_reviews_count() }} отзывов)
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a href="{{ url_for('location_detail', location_id=location.id) }}" 
+                           class="btn btn-primary btn-sm w-100">
+                            Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <h4>У вас пока нет избранных мест</h4>
+            <p>Добавляйте интересные скидки в избранное, чтобы не потерять их!</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Найти скидки</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

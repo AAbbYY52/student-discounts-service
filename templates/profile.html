@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет - Скидки для студентов{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Личный кабинет</h2>
+            </div>
+            <div class="card-body">
+                <h4>Информация о пользователе</h4>
+                <hr>
+                <p><strong>Имя пользователя:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Дата регистрации:</strong> {{ user.created_at.strftime('%d.%m.%Y') }}</p>
+                
+                <hr>
+                
+                <h4>Статистика</h4>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="text-primary">{{ reviews_count }}</h3>
+                                <p class="mb-0">Отзывов оставлено</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="text-success">{{ favorites_count }}</h3>
+                                <p class="mb-0">В избранном</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('favorites') }}" class="btn btn-primary">Мои избранные</a>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">На главную</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
